@@ -17,3 +17,4 @@ target
 rustc-ice-*.txt
 
 .idea/
+Cargo.lock
