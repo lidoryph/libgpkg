@@ -1,20 +1,23 @@
 use std::io::Error;
 use std::path::Path;
+use rusqlite::{Connection, OpenFlags};
+use crate::repo::Repo;
 
 pub enum AddRepoResult {
-    FileDoesNotExist,
+    FileDoesNotExist(String),
     CouldNotCheckFile(Error),
     CouldNotOpenRepo(rusqlite::Error),
     CouldNotReadDatabase(rusqlite::Error),
     NotValidRepo(String)
 }
 
-pub fn add_repo_file(repo: String) -> Result<(), AddRepoResult> {
-    let repo_path = Path::new(&repo);
+pub fn add_repo_file(repo_name: String) -> Result<(), AddRepoResult> {
+    let repo: Repo;
+    let repo_path = Path::new(&repo_name);
 
     match repo_path.try_exists() {
         Ok(true) => {}
-        Ok(false) => { return Err(AddRepoResult::FileDoesNotExist) }
+        Ok(false) => { return Err(AddRepoResult::FileDoesNotExist(repo_name)) }
         Err(err) => { return Err(AddRepoResult::CouldNotCheckFile(err))}
     }
 
@@ -41,7 +44,7 @@ pub mod tests{
     pub fn unexistent_file() {
         assert!(matches!(
             add_repo_file("unexistent_repo_file.db".to_string()),
-            Err(AddRepoResult::FileDoesNotExist)
+            Err(AddRepoResult::FileDoesNotExist(..))
         ));
     }
 
