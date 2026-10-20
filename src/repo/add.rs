@@ -21,15 +21,21 @@ pub fn add_repo_file(repo_name: String) -> Result<(), AddRepoResult> {
         Err(err) => { return Err(AddRepoResult::CouldNotCheckFile(err))}
     }
 
-    let file_connection = sqlite::open(repo_path).unwrap();
-    let valid_repo_file = file_connection.prepare("SELECT * FROM repo_info");
+    let conn = Connection::open_with_flags(repo_path, OpenFlags::SQLITE_OPEN_READ_ONLY)
+        .map_err(|err| AddRepoResult::CouldNotOpenRepo(err))?;
 
-    if valid_repo_file.is_err() {
-        return Err(AddRepoResult::NotValidRepo(valid_repo_file.err().unwrap()));
+    let info_exists = conn.table_exists(None, "repo_info")
+        .map_err(|err| AddRepoResult::CouldNotReadDatabase(err))?;
+
+    if !info_exists {
+        return Err(AddRepoResult::NotValidRepo("RepoInfoDoesNotExist".to_string()));
     }
 
-    let repo_name = file_connection.prepare("SELECT name FROM repo_info").unwrap();
-    
+    let repo_info = conn.prepare("SELECT * FROM repo_info")
+        .map_err(|err| AddRepoResult::CouldNotReadDatabase(err))?;
+
+    //TODO: Check column types and gather information for Repo struct
+
 
     Ok(())
 }
@@ -54,7 +60,7 @@ pub mod tests{
 
         assert!(matches!(
             add_repo_file("not_valid_repo.repo".to_string()),
-            Err(AddRepoResult::NotValidRepo(..))
+            Err(AddRepoResult::CouldNotOpenRepo(..))
         ));
 
         fs::remove_file("not_valid_repo.repo").unwrap();
