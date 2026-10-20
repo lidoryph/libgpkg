@@ -4,7 +4,9 @@ use std::path::Path;
 pub enum AddRepoResult {
     FileDoesNotExist,
     CouldNotCheckFile(Error),
-    NotValidRepo(sqlite::Error)
+    CouldNotOpenRepo(rusqlite::Error),
+    CouldNotReadDatabase(rusqlite::Error),
+    NotValidRepo(String)
 }
 
 pub fn add_repo_file(repo: String) -> Result<(), AddRepoResult> {
