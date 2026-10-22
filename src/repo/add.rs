@@ -24,17 +24,17 @@ pub fn add_repo_file(repo_name: String) -> Result<(), AddRepoResult> {
     }
 
     let conn = Connection::open_with_flags(repo_path, OpenFlags::SQLITE_OPEN_READ_ONLY)
-        .map(AddRepoResult::CouldNotOpenRepo)?;
+        .map_err(AddRepoResult::CouldNotOpenRepo)?;
 
     let info_exists = conn.table_exists(None, "repo_info")
-        .map(AddRepoResult::CouldNotReadDatabase)?;
+        .map_err(AddRepoResult::CouldNotReadDatabase)?;
 
     if !info_exists {
         return Err(AddRepoResult::NotValidRepo("RepoInfoDoesNotExist".to_string()));
     }
 
     let repo_info = conn.prepare("SELECT * FROM repo_info")
-        .map(AddRepoResult::CouldNotReadDatabase)?;
+        .map_err(AddRepoResult::CouldNotReadDatabase)?;
 
     let file_columns = repo_info.column_names();
 
