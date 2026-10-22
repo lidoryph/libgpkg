@@ -3,6 +3,8 @@ use std::path::Path;
 use rusqlite::{Connection, OpenFlags};
 use crate::repo::Repo;
 
+static EXPECTED_COLUMNS: [&str; 5] = ["name", "description", "maintainers", "version", "url"];
+
 pub enum AddRepoResult {
     FileDoesNotExist(String),
     CouldNotCheckFile(Error),
@@ -22,19 +24,28 @@ pub fn add_repo_file(repo_name: String) -> Result<(), AddRepoResult> {
     }
 
     let conn = Connection::open_with_flags(repo_path, OpenFlags::SQLITE_OPEN_READ_ONLY)
-        .map_err(|err| AddRepoResult::CouldNotOpenRepo(err))?;
+        .map(AddRepoResult::CouldNotOpenRepo)?;
 
     let info_exists = conn.table_exists(None, "repo_info")
-        .map_err(|err| AddRepoResult::CouldNotReadDatabase(err))?;
+        .map(AddRepoResult::CouldNotReadDatabase)?;
 
     if !info_exists {
         return Err(AddRepoResult::NotValidRepo("RepoInfoDoesNotExist".to_string()));
     }
 
     let repo_info = conn.prepare("SELECT * FROM repo_info")
-        .map_err(|err| AddRepoResult::CouldNotReadDatabase(err))?;
+        .map(AddRepoResult::CouldNotReadDatabase)?;
+
+    let file_columns = repo_info.column_names();
 
     //TODO: Check column types and gather information for Repo struct
+
+    for column in 1..6 {
+        if file_columns[column] != EXPECTED_COLUMNS[column] {
+            return Err(AddRepoResult::NotValidRepo("NotValidStructure".to_string()))
+        }
+    }
+
 
 
     Ok(())
